@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toko Baju</title>
+    <link rel="stylesheet" href="style.css">    
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+</head>
+<body>
+    <div class="sidebar">
+        <h2>Gemilang Collection</h2>
+        <button id="kasirButton" onclick="showPage('kasir')">Kasir</button>
+        <button id="pendingButton" onclick="showPage('pendingPage'); loadPendingData();">Pending Pembayaran</button> 
+        <button onclick="showPage('updateStock')">Input Barang</button>
+        <button onclick="showPage('historyStock'); loadHistoryStockData();">Riwayat InputBarang</button>
+        <button onclick="showPage('pendingPage'); loadPendingData();">Pending Pembayaran</button>  
+        <button onclick="showPage('stokPage'); loadStockData();">Daftar Stok</button>
+        <button onclick="showPage('kasirPage'); loadKasirData();">Riwayat Penjualan</button>        
+        <button onclick="clearDatabase()">Hapus Semua Data</button>
+    </div>
+    
+    <div id="updateStock" class="page">
+        <h2>Input Barang</h2>
+        <form id="stockForm" class="stock-form">
+            <div class="form-group">
+                <label for="kodeBarang">Kode Barang</label>
+                <input type="text" id="kodeBarang" placeholder="Masukkan Kode Barang">
+            </div>
+    
+            <div class="form-group">
+                <label for="namaBarang">Nama Barang</label>
+                <input type="text" id="namaBarang" placeholder="Masukkan Nama Barang" readonly>
+
+            </div>
+    
+            <div class="form-group">
+                <label for="warna">Warna</label>
+                <input type="text" id="warna" placeholder="Masukkan Warna">
+            </div>
+    
+            <div class="form-group">
+                <label for="quantity">Quantity</label>
+                <input type="number" id="quantity" min="1" placeholder="Masukkan Jumlah">
+            </div>
+    
+            <div class="form-group">
+                <label for="ukuran">Ukuran</label>
+                <select id="ukuran">
+                    <option value="">Pilih Ukuran</option>
+                    <option>XS</option>
+                    <option>S</option>
+                    <option>M</option>
+                    <option>L</option>
+                    <option>XL</option>
+                    <option>XXL</option>
+                </select>
+            </div>
+    
+            <div class="form-group">
+                <label for="harga">Harga (Rp)</label>
+                <input type="text" id="harga" oninput="formatHarga(this)" placeholder="Masukkan Harga" readonly>
+            </div>
+    
+            <div class="form-actions">
+                <button type="button" class="resetu-btn" onclick="resetForm()">Reset</button>
+                <button type="button" class="submitu-btn" onclick="saveStock()">Simpan</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="historyStock" class="page">
+        <div class="page-header">
+            <h2>Riwayat InputBarang</h2>
+            <div class="exportk-filters">
+                <label>Dari: <input type="date" id="startDateHistory"></label>
+                <label>Hingga: <input type="date" id="endDateHistory"></label>
+                <button class="export-btnk" onclick="exportHistoryToExcel()">Export To Excel</button>
+                <input type="text" id="searchHistory" placeholder="Cari Barang..." oninput="searchHistory()">
+            </div>
+        </div>
+    
+        <table id="historyStockTable">
+            <thead>
+                <tr>
+                    <th>Kode Barang</th>
+                    <th>Nama Barang</th>
+                    <th>Warna</th>
+                    <th>Quantity</th>
+                    <th>Ukuran</th>
+                    <th>Harga</th>
+                    <th>Tanggal</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    
+        <div class="pagination">
+            <button id="prevHistoryPage" onclick="changeHistoryPage(-1)">❮ Prev</button>
+            <span id="historyPageInfo">Halaman 1</span>
+            <button id="nextHistoryPage" onclick="changeHistoryPage(1)">Next ❯</button>
+        </div>
+    </div>
+
+    <div id="stokPage" class="page">
+        <div class="page-header">
+            <h2>Daftar Stok</h2>
+            <div class="exportk-filters">
+                <label>Dari: <input type="date" id="startDateStock"></label>
+                <label>Hingga: <input type="date" id="endDateStock"></label>
+                <button class="export-btnk" onclick="exportStockToExcel()">Export To Excel</button>
+                <input type="text" id="searchStock" placeholder="Cari Barang..." oninput="searchStock()">
+            </div>
+        </div>
+    
+        <table id="stockTable">
+            <thead>
+                <tr>
+                    <th>Kode Barang</th>
+                    <th>Nama Barang</th>
+                    <th>Warna</th>
+                    <th>Quantity</th>
+                    <th>Ukuran</th>
+                    <th>Harga</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        
+        <div class="pagination">
+            <button id="prevStockPage" onclick="changeStockPage(-1)">❮ Prev</button>
+            <span id="stockPageInfo">Halaman 1</span>
+            <button id="nextStockPage" onclick="changeStockPage(1)">Next ❯</button>
+        </div>
+    </div>
+             
+    <div id="kasirPage" class="page">
+        <div class="page-header">
+            <h2>Riwayat Penjualan</h2>
+            <div class="exportk-filters">
+                <label>Dari: <input type="date" id="startDate"></label>
+                <label>Hingga: <input type="date" id="endDate"></label>
+                <button class="export-btnk" onclick="exportKasirToExcel()">Export To Excel</button>
+                <input type="text" id="searchKasir" placeholder="Cari Barang..." oninput="searchKasir()">
+            </div>
+        </div>
+    
+        <table id="kasirTable">
+            <thead>
+                <tr>
+                    <th>Tanggal</th>
+                    <th>Kode Barang</th>
+                    <th>Nama Barang</th>
+                    <th>Warna</th>
+                    <th>Quantity</th>
+                    <th>Total Harga</th>
+                    <th>Status</th>
+                    <th>Total Pembayaran</th>
+                    <th>Metode Pembayaran</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    
+        <div class="pagination">
+            <button id="prevPage" onclick="changePage(-1)" disabled>‹ Prev</button>
+            <span id="currentPage">Halaman 1</span>
+            <button id="nextPage" onclick="changePage(1)">Next ›</button>
+        </div>
+    
+        <h3>Total Penjualan: Rp <span id="totalSales">0</span></h3>
+    </div>
+            
+    <div id="kasir" class="page">
+        <h2>Kasir</h2>
+        <form id="kasirForm">
+            <div class="form-group">
+                <label>Kode Barang:</label>
+                <input type="text" id="kodeInput" oninput="updateWarnaDropdown(); updateUkuranDropdown();" placeholder="Masukkan kode barang">
+            </div>
+            <div class="form-group">
+                <label>Warna:</label>
+                <select id="warnaDropdown">
+                    <option value="">Pilih Warna</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Ukuran:</label>
+                <select id="ukuranDropdown">
+                    <option value="">Pilih Ukuran</option>
+                </select>
+            </div>            
+            <div class="form-group">
+                <label>Quantity:</label>
+                <input type="number" id="checkoutQuantity" min="1" placeholder="Masukkan jumlah">
+            </div>
+            <div class="form-group">
+                <label>Discount:</label>
+                <input type="text" id="diskonToko"  placeholder="Masukkan Diskon">
+            </div>
+            
+            <button type="button" onclick="addToCart()">Tambah ke Keranjang</button>
+        </form>
+    
+        <div class="receipt">
+            <h3>Receipt</h3>
+            <ul id="cartItems"></ul>
+            <p><strong>Total Barang:</strong> <span id="totalItems">0</span></p>
+            <p><strong>Total Harga:</strong> <span id="totalPrice">Rp 0</span></p>
+            <div class="form-group">
+                <label for="jenisPembayaran"><strong>Metode Pembayaran:</strong></label>
+                <select id="jenisPembayaran">
+                    <option value="cash">Cash</option>
+                    <option value="transfer">Transfer</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="statusPembayaran">Pembayaran:</label>
+                <select id="statusPembayaran" onchange="toggleDPInput()">
+                    <option value="Lunas">Lunas</option>
+                    <option value="DP">DP</option>
+                </select>
+            </div>
+            <div class="form-group" id="dpAmountGroup" style="display: none;">
+                <label>Nominal DP (Rp):</label>
+                <input type="text" id="dpAmount" placeholder="Masukkan jumlah DP">
+            </div>
+            
+            <div class="receipt-actions">
+                <button class="reset-btn" onclick="resetReceipt()">Reset</button>
+                <button class="checkout-btn" onclick="checkout()">Checkout & Print</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="pendingPage" class="page">
+        <h2>Pending Pembayaran</h2>
+        <table id="pendingTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Tanggal</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <div class="pagination">
+            <button id="prevPendingPage" onclick="changePendingPage(-1)">❮ Prev</button>
+            <span id="pendingPageInfo">Halaman 1</span>
+            <button id="nextPendingPage" onclick="changePendingPage(1)">Next ❯</button>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

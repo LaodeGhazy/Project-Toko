@@ -1,0 +1,564 @@
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: white;
+}
+
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 250px;
+    height: 100vh;
+    background: #2c3e50;
+    padding: 20px;
+    color: white;
+}
+
+.sidebar button {
+    display: block;
+    width: 100%;
+    margin-bottom: 15px;
+    background: #FFBD60;
+    border: none;
+    padding: 12px;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.3s;
+}
+
+.sidebar button:hover {
+    background: #e0a54e;
+}
+
+.page {
+    margin-left: 370px;
+    padding: 20px;
+    display: none;
+    background: white;
+    border-radius: 10px;
+    max-width: 90%; /* Perlu lebih lebar dari 600px */
+    min-width: 800px; /* Mencegah terlalu kecil */
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+input, select, button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+button {
+    background: #FFBD60;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+button:hover {
+    background: #e0a54e;
+}
+
+.receipt {
+    background: #ecf0f1;
+    padding: 15px;
+    border-radius: 10px;
+    margin-top: 20px;
+}
+
+.receipt ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.receipt ul li {
+    background: white;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 5px;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10px;
+}
+
+.export-btn {
+    width: auto;  /* Sesuai teks */
+    min-width: 80px; /* Tidak terlalu kecil */
+    padding: 5px 10px;
+    font-size: 12px;
+    background: #FFBD60;
+    border: none;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    text-align: center;
+}
+
+.export-btn:hover {
+    background: #e0a54e;
+}
+
+.receipt-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.checkout-btn {
+    padding: 6px 12px;
+    font-size: 14px;
+    background: #FFBD60;
+    border: none;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.checkout-btn:hover {
+    background: #e0a54e;
+}
+
+.reset-btn {
+    padding: 6px 12px;
+    font-size: 14px;
+    height: 37px;
+    background: #e74c3c;
+    border: none;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.reset-btn:hover {
+    background: #c0392b;
+}
+
+.stock-form {
+    background: white; /* Pastikan background solid */
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    max-width: 500px; /* Membatasi lebar maksimal */
+    width: 100%; /* Supaya responsif */
+    margin: auto; /* Tengah otomatis */
+}
+
+.stock-form .form-group {
+    margin-bottom: 15px;
+}
+
+.stock-form label {
+    font-size: 18px;
+    font-weight: bold;
+    display: block;
+    margin-bottom: 5px;
+}
+
+
+.stock-form input,
+.stock-form select {
+    width: 100%; /* Input mengikuti lebar form */
+    padding: 10px; /* Memberikan jarak agar nyaman */
+    border: 1px solid #ccc; /* Tambahkan border */
+    border-radius: 5px;
+    font-size: 16px; /* Perbesar teks agar mudah dibaca */
+}
+
+.stock-form input:focus, 
+.stock-form select:focus {
+    border-color: #FFBD60;
+    outline: none;
+    box-shadow: 0px 0px 5px rgba(255, 189, 96, 0.5);
+}
+
+.form-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+
+.submitu-btn {
+    padding: 12px 20px;
+    font-size: 18px;
+    background: #FFBD60;
+    border: none;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    width: 48%;
+}
+
+.submitu-btn:hover {
+    background: #e0a54e;
+}
+
+.resetu-btn {
+    padding: 12px 20px;
+    font-size: 18px;
+    background: #e74c3c;
+    border: none;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    width: 48%;
+}
+
+.resetu-btn:hover {
+    background: #c0392b;
+}
+.stock-form .form-group {
+    margin-bottom: 15px; /* Beri jarak antar input */
+}
+
+/* Halaman Kasir */
+#kasir {
+    padding: 20px;
+}
+
+/* Form kasir lebih rapi */
+#kasirForm {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    max-width: 500px;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+#kasirForm .form-group {
+    margin-bottom: 15px;
+}
+
+#kasirForm input,
+#kasirForm select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+#kasirForm button {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#kasirForm button:hover {
+    background-color: #0056b3;
+}
+
+/* Receipt lebih rapi */
+.receipt {
+    background: #f9f9f9;
+    padding: 15px;
+    border-radius: 10px;
+    max-width: 500px;
+    margin-top: 20px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Tombol checkout & reset di kanan bawah */
+.receipt-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.reset-btn {
+    background-color: #dc3545;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.reset-btn:hover {
+    background-color: #a71d2a;
+}
+
+.checkout-btn {
+    background-color: #28a745;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.checkout-btn:hover {
+    background-color: #1e7e34;
+}
+
+/* Styling Table */
+#kasirTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-family: Arial, sans-serif;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+#kasirTable th {
+    background-color: #f8b400;
+    color: white;
+    padding: 12px;
+    text-align: center;
+    font-weight: bold;
+}
+
+#kasirTable td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: center;
+}
+
+#kasirTable tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+/* Styling Pagination */
+.pagination {
+    margin-top: 15px;
+    text-align: center;
+}
+
+.pagination button {
+    background-color: #f8b400;
+    border: none;
+    color: white;
+    padding: 8px 12px;
+    margin: 5px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: 0.3s;
+    font-weight: bold;
+}
+
+.pagination button:hover {
+    background-color: #d99600;
+}
+
+.pagination span {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+/* Styling Export & Date Filter */
+.exportk-filters {
+    margin-left: 20px;
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    margin-bottom: 10px;
+}
+
+.exportk-filters input {
+    padding: 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.exportk-btn {
+    background-color: #28a745;
+    color: white;
+    padding: 8px 12px;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: 0.3s;
+    font-weight: bold;
+}
+
+.exportk-btn:hover {
+    background-color: #218838;
+}
+
+/* Styling Page Header */
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: left;
+    margin-bottom: 15px;
+}
+
+/* Perbaiki perataan label dan input */
+.export-filters {
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* Beri jarak antar elemen */
+    margin-bottom: 20px;
+}
+
+/* Style untuk setiap label + input */
+.export-filters label {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.export-filters input {
+    width: 200px; /* Sesuaikan ukuran input */
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+
+/* Styling Tombol Export */
+.export-btn {
+    background-color: #28a745;
+    color: white;
+    padding: 8px 12px;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: 0.3s;
+    font-weight: bold;
+}
+
+.export-btn:hover {
+    background-color: #218838;
+}
+
+/* Membuat dua tabel sejajar */
+.stock-container {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.tablea-wrapper {
+    width: 48%; /* Agar kedua tabel memiliki lebar yang sama */
+}
+
+/* Styling Tabel */
+#stockTable, #historyStockTable, #pendingTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-family: Arial, sans-serif;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+#stockTable th, #historyStockTable th, #pendingTable th {
+    background-color: #f8b400;
+    color: white;
+    padding: 12px;
+    text-align: center;
+    font-weight: bold;
+}
+
+#stockTable td, #historyStockTable, #pendingTable td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: center;
+}
+
+#stockTable tr:nth-child(even), #stockSummaryTable tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+/* Pagination */
+.paginationx {
+    margin-top: 10px;
+    text-align: center;
+}
+
+.paginationx button {
+    background-color: #f8b400;
+    border: none;
+    color: white;
+    padding: 8px 12px;
+    margin: 5px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: 0.3s;
+    font-weight: bold;
+}
+
+.paginationx button:hover {
+    background-color: #d99600;
+}
+
+.payment-method {
+    margin: 10px 0;
+    font-size: 16px;
+}
+
+.payment-method label {
+    margin-right: 15px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#searchStock {
+    width: 200px;
+    padding: 5px;
+    font-size: 14px;
+}
+#searchKasir {
+    width: 200px;
+    padding: 5px;
+    font-size: 14px;
+}
+
+#kasirButton {
+    background-color: #32CD32;
+    transition: background 0.3s, transform 0.2s; 
+}
+
+#kasirButton:hover {
+    background-color: #2E8B57; 
+    transform: scale(1.05);
+}
+
+#pendingButton {
+    background-color: #3498db; 
+    transition: background 0.3s, transform 0.2s;
+}
+
+#pendingButton:hover {
+    background-color: #2980b9; 
+    transform: scale(1.05); 
+}
+
+.delete-btn {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.delete-btn:hover {
+    background-color: #c0392b;
+}
+
