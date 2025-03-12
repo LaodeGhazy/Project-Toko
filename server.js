@@ -9,10 +9,12 @@ app.use(bodyParser.json());
 app.use(cors());
 
 const pool = new Pool({
-    connectionString: 'postgresql://postgres:781877@db.mobjwjgyspiwnvhsunvx.supabase.co:5432/postgres',
-    ssl: { rejectUnauthorized: false }
+    user: 'postgres',
+    host: 'localhost',
+    database: 'toko_baju',
+    password: '781877',
+    port: 5434,
 });
-
 
 app.use(express.static(path.join(__dirname, 'public')));
 
