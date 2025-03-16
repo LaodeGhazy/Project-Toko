@@ -1,6 +1,7 @@
 const stockStore = "stock";
 const kasirStore = "kasir";
 const dbName = "TokoBajuDB";
+
 let cart = [];
 
 function showPage(page) {
@@ -100,6 +101,7 @@ async function updateUkuranDropdown() {
 }
 
 
+
 async function saveStock() {
     const kodeBarang = document.getElementById("kodeBarang").value;
     const namaBarang = document.getElementById("namaBarang").value;
@@ -166,6 +168,25 @@ document.getElementById("diskonToko").addEventListener("input", function () {
     updateTotalWithDiscount(); // Hitung ulang total harga
 });
 
+document.addEventListener("DOMContentLoaded", function () {
+    updateReceiptControls(); // Pastikan dropdown langsung disable saat halaman pertama kali dimuat
+});
+
+function updateReceiptControls() {
+    let hasItems = cart.length > 0;
+
+    document.getElementById("jenisPembayaran").disabled = !hasItems;
+    document.getElementById("statusPembayaran").disabled = !hasItems;
+    document.getElementById("dpAmount").disabled = !hasItems;
+
+    if (!hasItems) {
+        document.getElementById("statusPembayaran").value = "Lunas"; // ✅ Reset ke Lunas jika kosong
+        document.getElementById("dpAmount").value = ""; // ✅ Kosongkan DP jika keranjang kosong
+        document.getElementById("dpAmountGroup").style.display = "none"; // ✅ Sembunyikan DP
+    }
+}
+
+
 function updateTotalWithDiscount() {
     let totalPriceElement = document.getElementById("totalPrice");
     let totalHarga = parseFloat(totalPriceElement.dataset.originalPrice) || 0; // Ambil harga sebelum diskon
@@ -188,10 +209,10 @@ async function addToCart() {
     const warna = document.getElementById("warnaDropdown").value;
     const ukuran = document.getElementById("ukuranDropdown").value;
     const quantity = parseInt(document.getElementById("checkoutQuantity").value);
-
+    
     const diskonElement = document.getElementById("diskonToko");
     let diskonInput = diskonElement ? diskonElement.value.replace("%", "").trim() : "0"; 
-    let diskon = parseInt(diskonInput) || 0;
+    let diskon = parseInt(diskonInput) || 0; // 🔹 Konversi ke angka, default ke 0 jika tidak ada input
 
     if (!kode || !warna || !ukuran || isNaN(quantity) || quantity <= 0) {
         alert("Mohon lengkapi semua data dengan benar.");
@@ -221,10 +242,10 @@ async function addToCart() {
                 kodeBarang: kode,
                 namaBarang: result.nama_barang,
                 warna,
-                ukuran,  // Tambahkan ukuran ke dalam cart
+                ukuran,
                 quantity,
                 hargaSatuan,
-                diskon: diskon + "%", 
+                diskon: diskon + "%", // 🔹 Simpan diskon dalam format persen
                 totalHargaSebelumDiskon: totalHarga,
                 totalHarga: totalSetelahDiskon
             });
@@ -237,6 +258,7 @@ async function addToCart() {
         console.error("Gagal menambahkan ke keranjang:", error);
     }
 }
+
 
 function updateReceipt() {
     let cartItemsElement = document.getElementById("cartItems");
@@ -274,6 +296,8 @@ function toggleDPInput() {
     dpInput.style.display = (status === "DP") ? "block" : "none";
 }
 
+
+
 async function checkout() {
     if (cart.length === 0) {
         alert("Keranjang masih kosong!");
@@ -292,7 +316,7 @@ async function checkout() {
             quantity: item.quantity,
             ukuran: item.ukuran || "-",
             hargaSatuan: parseFloat(item.hargaSatuan) || 0,
-            diskon: parseFloat(item.diskon) || 0
+            diskon: parseFloat(item.diskon) || 0 // ✅ Pastikan diskon dikirim ke backend
         })),
         pembayaran,
         metodePembayaran,
@@ -306,25 +330,28 @@ async function checkout() {
     });
 
     const result = await response.json();
-    console.log(response);
     if (response.ok) {
         alert(result.message);
 
-        // 🔹 Jika pembayaran adalah DP, generate PDF dengan `true`, jika lunas `false`
-        generateReceiptPDF(transaksi, pembayaran === "DP");
+        // ✅ Reset semua opsi pembayaran ke default
+        document.getElementById("statusPembayaran").value = "Lunas";
+        document.getElementById("dpAmount").value = "";
+        document.getElementById("dpAmountGroup").style.display = "none";
 
+        // ✅ Reset form keranjang
         cart = [];
         updateReceipt();
-        document.getElementById("kasirForm").reset();
+        updateReceiptControls();
     } else {
         alert(result.error);
     }
 }
 
+
 async function loadPendingData() {
     const response = await fetch('/get-pending');
     const pendingData = await response.json();
-    
+
     const tableBody = document.querySelector("#pendingTable tbody");
     tableBody.innerHTML = "";
 
@@ -342,6 +369,7 @@ async function loadPendingData() {
     });
 }
 
+
 async function processLunas(id) {
     console.log(`🔹 ID Penjualan yang dikirim: ${id}`);
 
@@ -350,19 +378,19 @@ async function processLunas(id) {
         const result = await response.json();
 
         if (response.ok) {
-            console.log("✅ Data transaksi berhasil diambil:", result);
+            console.log("✅ Data transaksi berhasil dilunasi:", result);
 
-            // **Cek apakah items ada**
-            if (!result.items || !Array.isArray(result.items)) {
-                console.error("❌ Data items tidak ditemukan atau bukan array!", result.items);
-                alert("Data items tidak ditemukan!");
+            // ✅ Pastikan `transaksi` tidak kosong sebelum dipakai di `generateReceiptsPDF`
+            if (!result.transaksi || !result.items) {
+                console.error("❌ Data transaksi atau items tidak ditemukan:", result);
+                alert("Gagal mendapatkan data transaksi setelah pelunasan.");
                 return;
             }
 
             alert(result.message);
-            console.log("sebelum nota:", result.transaksi, result.items);
+            console.log("📜 Sebelum generate nota:", result.items, result.transaksi);
             generateReceiptsPDF(result.items, result.transaksi); // 🔹 Cetak resi langsung
-            loadPendingData(); // 🔹 Reload halaman pending
+            loadPendingData();
         } else {
             alert(result.error);
         }
@@ -370,6 +398,8 @@ async function processLunas(id) {
         console.error("❌ Error saat memproses lunas:", error);
     }
 }
+
+
 
 async function generateReceiptFromDB(id) {
     try {
@@ -525,12 +555,11 @@ async function deletePending(id) {
 }
 
 
-
 function generateReceiptPDF(transaksi, isDP) {
     const { jsPDF } = window.jspdf; // Ambil jsPDF dari window.jspdf
     let pdf = new jsPDF();
     
-    let receiptContent = `Toko Baju XYZ\n-------------------------------\n`;
+    let receiptContent = `Gemilang Collection\n-------------------------------\n`;
     receiptContent += `Tanggal: ${new Date().toLocaleDateString()}\n`;
     receiptContent += `Metode Pembayaran: ${transaksi.metodePembayaran}\n`;
     receiptContent += `Status Pembayaran: ${transaksi.pembayaran}\n-------------------------------\n`;
@@ -555,41 +584,47 @@ function generateReceiptPDF(transaksi, isDP) {
     pdf.save(`Struk_Pembelian_${new Date().getTime()}.pdf`);
 }
 
-function generateReceiptsPDF(transaksi, isDP) {
+function generateReceiptsPDF(transaksi, infoTransaksi) {
     const { jsPDF } = window.jspdf; // Ambil jsPDF dari window.jspdf
     let pdf = new jsPDF();
-    
+    const today = new Date(); 
+
     let receiptContent = `Gemilang Collection\n-------------------------------\n`;
     const formattedDate = `${String(today.getDate()).padStart(2, '0')} ${String(today.getMonth() + 1).padStart(2, '0')} ${today.getFullYear()}`;
     receiptContent += `Tanggal: ${formattedDate}\n`;
-    receiptContent += `Metode Pembayaran: ${isDP.metode_pembayaran}\n`;
-    receiptContent += `Status Pembayaran: Lunas\n-------------------------------\n`;
+    receiptContent += `Metode Pembayaran: ${infoTransaksi.metode_pembayaran}\n`;
+    receiptContent += `Status Pembayaran: ${infoTransaksi.pembayaran}\n-------------------------------\n`;
 
-    console.log("trans:", transaksi, isDP);
-    
+    console.log("Transaksi Data:", transaksi, infoTransaksi);
+
+    let totalHargaAsli = 0;
+    let totalPembayaran = parseFloat(infoTransaksi.total_pembayaran);
+
     transaksi.forEach(item => {
-        let totalItem = item.harga * item.quantity;
-        let satuan = parseFloat(item.harga)
+        let totalItem = parseFloat(item.harga) * item.quantity;
         let hargaSetelahDiskon = totalItem - (totalItem * (item.diskon / 100));
-        receiptContent += `${item.nama_barang} (${item.warna})\n${item.quantity} x Rp${satuan.toLocaleString()}  =  Rp${hargaSetelahDiskon.toLocaleString()}\n-------------------------------\n`;
+        totalHargaAsli += totalItem;
+
+        receiptContent += `${item.nama_barang} (${item.warna})\n`;
+        receiptContent += `${item.quantity} x Rp${parseFloat(item.harga).toLocaleString()} = Rp${hargaSetelahDiskon.toLocaleString()}\n-------------------------------\n`;
     });
 
-    if (isDP) {
-        let bayarLunas = isDP.total_harga - isDP.total_pembayaran
-        let DP = parseFloat(isDP.total_pembayaran)
-        let hargaTotal = parseFloat(isDP.total_harga)
-        receiptContent += `\nHarga Total: Rp${hargaTotal.toLocaleString('id-ID')}\n`;
-        receiptContent += `\nDP: Rp${DP.toLocaleString('id-ID')}\n`;
-        receiptContent += `\nSisa Bayar: Rp${bayarLunas.toLocaleString('id-ID')}\n-------------------------------\nTerima kasih telah berbelanja!`;
+    if (infoTransaksi.pembayaran.startsWith("Lunas DP")) {
+        let bayarLunas = totalHargaAsli - totalPembayaran;
+        receiptContent += `\nHarga Total: Rp${totalHargaAsli.toLocaleString('id-ID')}\n`;
+        receiptContent += `DP: Rp${totalPembayaran.toLocaleString('id-ID')}\n`;
+        receiptContent += `Sisa Bayar: Rp${bayarLunas.toLocaleString('id-ID')}\n-------------------------------\n`;
     } else {
-        let totalHarga = transaksi.cart.reduce((acc, item) => acc + ((item.hargaSatuan * item.quantity) - ((item.hargaSatuan * item.quantity) * (item.diskon / 100))), 0);
-        receiptContent += `\nTotal Bayar: Rp${totalHarga.toLocaleString()}\n-------------------------------\nTerima kasih telah berbelanja!`;
+        receiptContent += `\nTotal Bayar: Rp${totalPembayaran.toLocaleString('id-ID')}\n-------------------------------\n`;
     }
+
+    receiptContent += "Terima kasih telah berbelanja!";
 
     pdf.setFontSize(12);
     pdf.text(receiptContent, 10, 10);
     pdf.save(`Struk_Pembelian_${new Date().getTime()}.pdf`);
 }
+
 
 function formatTanggal(tanggal) {
     const date = new Date(tanggal);
@@ -788,7 +823,7 @@ async function exportKasirToExcel() {
     // ✅ Tambahkan Judul
     worksheet.mergeCells("A1:I1");
     let titleRow = worksheet.getCell("A1");
-    titleRow.value = "Riwayat Penjualan Gemilang Collection"; // Pastikan ini tetap
+    titleRow.value = "Riwayat Penjualan Gemilang Collection";
     titleRow.font = { bold: true, size: 16 };
     titleRow.alignment = { horizontal: "center" };
 
@@ -805,7 +840,7 @@ async function exportKasirToExcel() {
 
     // ✅ Header
     let headers = [
-        "Tanggal", "Kode Barang", "Nama Barang", "Warna",
+        "Tanggal", "id Penjualan", "Kode Barang", "Nama Barang", "Warna",
         "Quantity", "Total Harga", "Status", "Total Pembayaran", "Metode Pembayaran"
     ];
     let headerRow = worksheet.addRow(headers);
@@ -814,9 +849,11 @@ async function exportKasirToExcel() {
     // ✅ Tambahkan Data
     let dataRows = filteredData.map(item => {
         let hargaTotal = item.quantity * item.harga;
+        let pembayaran = Number(item.total_pembayaran); // ✅ Pastikan angka, bukan string
+
         totalQuantity += item.quantity;
         totalHarga += hargaTotal;
-        totalPembayaran += hargaTotal;
+        totalPembayaran += pembayaran; // ✅ Gunakan angka
 
         return [
             new Date(item.tanggal).toLocaleDateString("id-ID"),
@@ -826,7 +863,7 @@ async function exportKasirToExcel() {
             item.quantity,
             hargaTotal,
             item.pembayaran,
-            hargaTotal,
+            pembayaran, // ✅ Kolom ini diperbaiki
             item.metode_pembayaran
         ];
     });
@@ -835,18 +872,28 @@ async function exportKasirToExcel() {
 
     // ✅ Tambahkan Total
     worksheet.addRow([]);
-    let totalRow = worksheet.addRow(["TOTAL", "", "", "", totalQuantity, totalHarga, "", totalPembayaran, ""]);
+    let totalRow = worksheet.addRow([
+        "TOTAL", "", "", "", totalQuantity, totalHarga, "", totalPembayaran, ""
+    ]);
     totalRow.font = { bold: true };
 
-    // ✅ Sesuaikan Ukuran Kolom Otomatis
-    worksheet.columns = headers.map((header, colIndex) => ({
-        header,
-        key: header.toLowerCase().replace(/\s+/g, "_"), 
-        width: Math.max(
-            header.length + 2,
-            ...dataRows.map(row => (row[colIndex] ? row[colIndex].toString().length + 2 : 10))
-        )
-    }));
+    // ✅ Format Angka di Kolom Harga & Pembayaran
+    worksheet.getColumn(6).numFmt = '#,##0';
+    worksheet.getColumn(8).numFmt = '#,##0';
+
+    // ✅ Atur Lebar Kolom Secara Otomatis Sesuai Data
+    worksheet.columns.forEach((column, colIndex) => {
+        let maxLength = 0;
+        let columnLetter = String.fromCharCode(65 + colIndex); // Konversi index ke huruf (A, B, C, ...)
+
+        column.eachCell({ includeEmpty: true }, cell => {
+            let cellText = cell.value ? cell.value.toString() : "";
+            maxLength = Math.max(maxLength, cellText.length);
+        });
+
+        column.width = maxLength < 10 ? 10 : maxLength + 2; // Tambahkan padding agar tidak mepet
+        console.log(`Kolom ${columnLetter} diatur lebarnya menjadi: ${column.width}`);
+    });
 
     // ✅ Tambahkan Border ke Semua Sel
     worksheet.eachRow((row, rowNumber) => {

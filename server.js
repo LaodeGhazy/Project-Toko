@@ -27,26 +27,26 @@ app.post('/update-stock', async (req, res) => {
 
     try {
         const check = await pool.query(
-            'SELECT * FROM stock WHERE kode_barang = $1 AND LOWER(warna) = LOWER($2) AND ukuran = $3',
+            'SELECT * FROM stock WHERE LOWER(kode_barang) = LOWER($1) AND LOWER(warna) = LOWER($2) AND ukuran = $3',
             [kodeBarang, warna, ukuran]
-        );
+        );        
         
 
         if (check.rows.length > 0) {
             // Jika warna dan ukuran sudah ada, update quantity di stock
             await pool.query(
-                'UPDATE stock SET quantity = quantity + $1, tanggal = CURRENT_DATE WHERE kode_barang = $2 AND LOWER(warna) = LOWER($3) AND ukuran = $4',
+                'UPDATE stock SET quantity = quantity + $1, tanggal = CURRENT_DATE WHERE LOWER(kode_barang) = LOWER($2) AND LOWER(warna) = LOWER($3) AND ukuran = $4',
                 [quantity, kodeBarang, warna, ukuran]
-            );
+            );            
             
             
         } else {
             // Jika ukuran berbeda, tambahkan row baru
             await pool.query(
                 `INSERT INTO stock (kode_barang, nama_barang, warna, quantity, ukuran, harga, tanggal) 
-                 VALUES ($1, $2, LOWER($3), $4, $5, $6, CURRENT_DATE)`,
+                 VALUES (LOWER($1), $2, LOWER($3), $4, $5, $6, CURRENT_DATE)`,
                 [kodeBarang, namaBarang, warna, quantity, ukuran, harga]
-            );
+            );            
             
             
         }
@@ -102,9 +102,10 @@ app.post("/deleteStock", async (req, res) => {
 
         // Hapus data dari history_stock berdasarkan id_history
         const deleteResult = await pool.query(
-            "DELETE FROM history_stock WHERE id_history = $1 RETURNING *", 
-            [id_history]
+            "DELETE FROM history_stock WHERE id_history = $1 AND LOWER(kode_barang) = LOWER($2) AND LOWER(warna) = LOWER($3) RETURNING *", 
+            [id_history, kodeBarang, warna]
         );
+        
 
         if (deleteResult.rowCount === 0) {
             return res.status(404).json({ message: "Data tidak ditemukan di history_stock!" });
@@ -112,9 +113,10 @@ app.post("/deleteStock", async (req, res) => {
 
         // Kurangi quantity di tabel stock sesuai dengan quantity dari history_stock
         await pool.query(
-            "UPDATE stock SET quantity = quantity - $1 WHERE kode_barang = $2", 
-            [quantityToDeduct, kodeBarang]
-        );
+            "UPDATE stock SET quantity = quantity - $1 WHERE LOWER(kode_barang) = LOWER($2) AND LOWER(warna) = LOWER($3) AND ukuran = $4", 
+            [quantityToDeduct, kodeBarang, warna, ukuran]
+        );        
+        
 
         res.json({ message: "Data berhasil dihapus dan stok diperbarui!", quantityDeducted: quantityToDeduct });
 
@@ -131,9 +133,9 @@ app.get('/get-barang', async (req, res) => {
     const { kodeBarang } = req.query;
     try {
         const result = await pool.query(
-            'SELECT DISTINCT nama_barang, harga FROM stock WHERE kode_barang = $1 LIMIT 1',
+            'SELECT DISTINCT nama_barang, harga FROM stock WHERE LOWER(kode_barang) = LOWER($1) LIMIT 1',
             [kodeBarang]
-        );
+        );        
 
         if (result.rows.length > 0) {
             res.status(200).json(result.rows[0]);
@@ -188,9 +190,9 @@ app.get('/get-warna', async (req, res) => {
     const { kodeBarang } = req.query;
     try {
         const result = await pool.query(
-            'SELECT DISTINCT warna FROM stock WHERE kode_barang = $1',
+            'SELECT DISTINCT warna FROM stock WHERE LOWER(kode_barang) = LOWER($1)',
             [kodeBarang]
-        );
+        );        
         res.status(200).json(result.rows);
     } catch (err) {
         console.error(err);
@@ -202,9 +204,9 @@ app.post('/add-to-cart', async (req, res) => {
     const { kodeBarang, warna, quantity } = req.body;
     try {
         const result = await pool.query(
-            'SELECT nama_barang, harga, ukuran FROM stock WHERE kode_barang = $1 AND warna = $2',
+            'SELECT nama_barang, harga, ukuran FROM stock WHERE LOWER(kode_barang) = LOWER($1) AND LOWER(warna) = LOWER($2)',
             [kodeBarang, warna]
-        );
+        );        
 
         if (result.rows.length === 0) {
             return res.status(404).json({ error: "Barang tidak ditemukan!" });
@@ -314,53 +316,78 @@ app.post('/process-lunas/:id', async (req, res) => {
     try {
         await client.query('BEGIN');
 
-        // ✅ Ambil transaksi utama
-        const transaksi = await client.query("SELECT * FROM penjualan WHERE id = $1", [id]);
-        
-        if (transaksi.rows.length === 0) {
+        // ✅ Ambil transaksi utama dari `penjualan`
+        const transaksiResult = await client.query(
+            "SELECT * FROM penjualan WHERE id = $1",
+            [id]
+        );
+
+        if (transaksiResult.rows.length === 0) {
             return res.status(404).json({ error: "Transaksi tidak ditemukan." });
         }
 
-        // ✅ Ambil detail barang
-        const items = await client.query(
+        let transaksi = transaksiResult.rows[0]; // ✅ Simpan transaksi ke variabel
+        let pembayaranSebelumnya = transaksi.pembayaran;
+
+        // ✅ Ambil detail barang dari transaksi DP sebelumnya
+        const itemsResult = await client.query(
             "SELECT * FROM detail_penjualan WHERE id_penjualan = $1",
             [id]
         );
 
-        if (items.rows.length === 0) {
+        if (itemsResult.rows.length === 0) {
             return res.status(404).json({ error: "Detail transaksi tidak ditemukan." });
         }
 
-        // ✅ Update status transaksi menjadi "Lunas"
-        await client.query(
-            "UPDATE penjualan SET pembayaran = 'Lunas' WHERE id = $1",
-            [id]
-        );
+        let items = itemsResult.rows; // ✅ Simpan item ke variabel
 
-        // ✅ Kurangi stok barang
-        for (const item of items.rows) {
-            await client.query(
-                "UPDATE stock SET quantity = quantity - $1 WHERE kode_barang = $2 AND warna = $3",
-                [item.quantity, item.kode_barang, item.warna]
-            );
+        // ✅ Jika sebelumnya DP, buat row baru dengan "Lunas DP {id}"
+        if (pembayaranSebelumnya === "DP") {
+            for (const item of items) {
+                await client.query(
+                    `INSERT INTO detail_penjualan (id_penjualan, kode_barang, nama_barang, warna, ukuran, quantity, harga, diskon, tanggal, metode_pembayaran, pembayaran, total_harga) 
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_DATE, $9, $10, $11) RETURNING *`,
+                    [id, item.kode_barang, item.nama_barang, item.warna, item.ukuran, item.quantity, 
+                     item.harga, item.diskon, item.metode_pembayaran, 
+                     `Lunas DP ${id}`, item.total_harga]
+                );
+            }
         }
+
+        // ✅ Update status pembayaran di `penjualan`
+        await client.query(
+            "UPDATE penjualan SET pembayaran = $1 WHERE id = $2",
+            [`Lunas DP ${id}`, id]
+        );
 
         await client.query('COMMIT');
 
-        res.status(200).json({
-            message: "Transaksi berhasil dilunasi",
-            transaksi: transaksi.rows[0],
-            items: items.rows
+        // 🔥 Kirim transaksi dan items dalam respons JSON
+        res.status(200).json({ 
+            message: `Transaksi berhasil dilunasi (Lunas DP ${id})`,
+            transaksi: {
+                id: transaksi.id,
+                tanggal: transaksi.tanggal,
+                pembayaran: `Lunas DP ${id}`,
+                metode_pembayaran: transaksi.metode_pembayaran, // ✅ Tambahkan metode pembayaran
+                total_pembayaran: transaksi.total_pembayaran,
+                total_harga: transaksi.total_harga
+            },
+            items: items
         });
 
     } catch (err) {
         await client.query('ROLLBACK');
-        console.error("❌ Error di Backend:", err);
-        res.status(500).json({ error: "Terjadi kesalahan di server" });
+        console.error("❌ Error saat melunasi transaksi:", err);
+        res.status(500).json({ error: "Gagal melunasi transaksi!" });
     } finally {
         client.release();
     }
 });
+
+
+
+
 
 app.get('/get-ukuran', async (req, res) => {
     const { kodeBarang } = req.query;
@@ -371,9 +398,10 @@ app.get('/get-ukuran', async (req, res) => {
 
     try {
         const result = await pool.query(
-            "SELECT DISTINCT ukuran FROM stock WHERE kode_barang = $1 ORDER BY ukuran", 
+            'SELECT DISTINCT ukuran FROM stock WHERE LOWER(kode_barang) = LOWER($1)',
             [kodeBarang]
         );
+        
 
         if (result.rows.length === 0) {
             return res.json([]); // Jika tidak ada ukuran, kirim array kosong

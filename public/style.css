@@ -562,3 +562,34 @@ button:hover {
     background-color: #c0392b;
 }
 
+#inputBarangBtn {
+    background: #e2f044; /* Warna kuning sesuai tombol lain */
+    color: white;
+    font-size: 18px;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.2s;
+}
+
+#inputBarangBtn:hover {
+    background: #e2f044;
+    transform: scale(1.05); /* Warna hover yang sesuai */
+}
+
+#hapusSemuaBtn {
+    background: #f04444; /* Warna kuning sesuai tombol lain */
+    color: white;
+    font-size: 18px;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.2s;
+}
+
+#hapusSemuaBtn:hover {
+    background: #f04444;
+    transform: scale(1.05); /* Warna hover yang sesuai */
+}

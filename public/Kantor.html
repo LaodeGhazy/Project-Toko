@@ -15,12 +15,12 @@
         <h2>Gemilang Collection</h2>
         <button id="kasirButton" onclick="showPage('kasir')">Kasir</button>
         <button id="pendingButton" onclick="showPage('pendingPage'); loadPendingData();">Pending Pembayaran</button> 
-        <button onclick="showPage('updateStock')">Input Barang</button>
+        <button id="inputBarangBtn" onclick="showPage('updateStock')">Input Barang</button>
         <button onclick="showPage('historyStock'); loadHistoryStockData();">Riwayat InputBarang</button>
-        <button onclick="showPage('pendingPage'); loadPendingData();">Pending Pembayaran</button>  
+        <!-- <button onclick="showPage('pendingPage'); loadPendingData();">Pending Pembayaran</button>   -->
         <button onclick="showPage('stokPage'); loadStockData();">Daftar Stok</button>
         <button onclick="showPage('kasirPage'); loadKasirData();">Riwayat Penjualan</button>        
-        <button onclick="clearDatabase()">Hapus Semua Data</button>
+        <button id="hapusSemuaBtn"onclick="clearDatabase()">Hapus Semua Data</button>
     </div>
     
     <div id="updateStock" class="page">
