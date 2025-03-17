@@ -251,6 +251,7 @@ async function addToCart() {
             });
 
             updateReceipt();
+            updateReceiptControls();
         } else {
             alert(result.error);
         }
@@ -282,7 +283,10 @@ function updateReceipt() {
 
     totalItemsElement.innerText = totalItems;
     totalPriceElement.innerText = `Rp ${totalHargaFinal.toLocaleString("id-ID")}`;
+
+    updateReceiptControls(); // 🔹 Pastikan tombol aktif setelah receipt diperbarui
 }
+
 
 document.getElementById("statusPembayaran").addEventListener("change", toggleDPInput);
 
@@ -333,6 +337,9 @@ async function checkout() {
     if (response.ok) {
         alert(result.message);
 
+        generateReceiptPDF(transaksi, pembayaran === "DP");
+
+
         // ✅ Reset semua opsi pembayaran ke default
         document.getElementById("statusPembayaran").value = "Lunas";
         document.getElementById("dpAmount").value = "";
@@ -342,6 +349,7 @@ async function checkout() {
         cart = [];
         updateReceipt();
         updateReceiptControls();
+
     } else {
         alert(result.error);
     }
@@ -1149,7 +1157,7 @@ function updateHistoryTable() {
             <td>${item.ukuran}</td>
             <td>Rp ${item.harga.toLocaleString("id-ID")}</td>
             <td>${item.tanggal}</td>
-            <td><button class="delete-btn" onclick="deleteStock('${item.id_history}', '${item.kode_barang}' )">🗑️</button></td>
+            <td><button class="delete-btn" onclick="deleteStock('${item.id_history}', '${item.kode_barang}', '${item.warna}', '${item.ukuran}')">🗑️</button></td>
         </tr>`;
         tableBody.innerHTML += row;
     });
@@ -1157,12 +1165,12 @@ function updateHistoryTable() {
     document.getElementById("historyPageInfo").innerText = `Halaman ${currentHistoryPage}`;
 }
 
-function deleteStock(id_history, kodeBarang) {
+function deleteStock(id_history, kodeBarang, warna, ukuran) {
     if (confirm("Apakah Anda yakin ingin menghapus data ini?")) {
         fetch("/deleteStock", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id_history, kodeBarang })
+            body: JSON.stringify({ id_history, kodeBarang, warna, ukuran })
         })
         .then(response => response.json())
         .then(result => {

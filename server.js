@@ -82,7 +82,7 @@ app.get('/get-history-stock', async (req, res) => {
 app.post("/deleteStock", async (req, res) => {
     console.log("Request Body:", req.body); // Cek isi request body
 
-    const { id_history, kodeBarang } = req.body; // Sesuaikan dengan nama dari request
+    const { id_history, kodeBarang, warna, ukuran } = req.body; // Sesuaikan dengan nama dari request
 
     if (!id_history || kodeBarang === "undefined") {
         return res.status(400).json({ message: "id_history atau kodeBarang tidak valid!" });
@@ -102,8 +102,8 @@ app.post("/deleteStock", async (req, res) => {
 
         // Hapus data dari history_stock berdasarkan id_history
         const deleteResult = await pool.query(
-            "DELETE FROM history_stock WHERE id_history = $1 AND LOWER(kode_barang) = LOWER($2) AND LOWER(warna) = LOWER($3) RETURNING *", 
-            [id_history, kodeBarang, warna]
+            "DELETE FROM history_stock WHERE id_history = $1 AND LOWER(kode_barang) = LOWER($2) RETURNING *", 
+            [id_history, kodeBarang]
         );
         
 
@@ -112,11 +112,11 @@ app.post("/deleteStock", async (req, res) => {
         }
 
         // Kurangi quantity di tabel stock sesuai dengan quantity dari history_stock
-        await pool.query(
+        updateStok = await pool.query(
             "UPDATE stock SET quantity = quantity - $1 WHERE LOWER(kode_barang) = LOWER($2) AND LOWER(warna) = LOWER($3) AND ukuran = $4", 
             [quantityToDeduct, kodeBarang, warna, ukuran]
         );        
-        
+        console.log(updateStok);
 
         res.json({ message: "Data berhasil dihapus dan stok diperbarui!", quantityDeducted: quantityToDeduct });
 
@@ -347,7 +347,7 @@ app.post('/process-lunas/:id', async (req, res) => {
                 await client.query(
                     `INSERT INTO detail_penjualan (id_penjualan, kode_barang, nama_barang, warna, ukuran, quantity, harga, diskon, tanggal, metode_pembayaran, pembayaran, total_harga) 
                      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_DATE, $9, $10, $11) RETURNING *`,
-                    [id, item.kode_barang, item.nama_barang, item.warna, item.ukuran, item.quantity, 
+                    [id, item.kode_barang, item.nama_barang, item.warna, item.ukuran, 0 ,
                      item.harga, item.diskon, item.metode_pembayaran, 
                      `Lunas DP ${id}`, item.total_harga]
                 );
