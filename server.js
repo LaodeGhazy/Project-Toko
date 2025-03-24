@@ -112,11 +112,17 @@ app.post("/deleteStock", async (req, res) => {
         }
 
         // Kurangi quantity di tabel stock sesuai dengan quantity dari history_stock
-        updateStok = await pool.query(
-            "UPDATE stock SET quantity = quantity - $1 WHERE LOWER(kode_barang) = LOWER($2) AND LOWER(warna) = LOWER($3) AND ukuran = $4", 
+        updateStock = await pool.query(
+            "UPDATE stock SET quantity = quantity - $1 WHERE LOWER(kode_barang) = LOWER($2) AND LOWER(warna) = LOWER($3) AND ukuran = $4 RETURNING quantity", 
             [quantityToDeduct, kodeBarang, warna, ukuran]
         );        
-        console.log(updateStok);
+        console.log(updateStock);
+        if (updateStock.rows.length > 0 && updateStock.rows[0].quantity <= 0) {
+            await pool.query(
+                "DELETE FROM stock WHERE LOWER(kode_barang) = LOWER($1) AND LOWER(warna) = LOWER($2) AND ukuran = $3",
+                [kodeBarang, warna, ukuran]
+            );
+        }
 
         res.json({ message: "Data berhasil dihapus dan stok diperbarui!", quantityDeducted: quantityToDeduct });
 
@@ -341,24 +347,34 @@ app.post('/process-lunas/:id', async (req, res) => {
 
         let items = itemsResult.rows; // ✅ Simpan item ke variabel
 
+        let totalHarga = items.reduce((sum, item) => sum + parseFloat(item.total_harga), 0);
+        let sisaPembayaran = totalHarga - transaksi.total_pembayaran;
+        
+        const newTransaction = await client.query(
+            `INSERT INTO penjualan (tanggal, pembayaran, total_pembayaran, metode_pembayaran)
+             VALUES (CURRENT_DATE, $1, $2, $3) RETURNING id`,
+            [`Lunas DP ${id}`, sisaPembayaran, transaksi.metode_pembayaran]
+        );
+
+        const newId = newTransaction.rows[0].id;
         // ✅ Jika sebelumnya DP, buat row baru dengan "Lunas DP {id}"
         if (pembayaranSebelumnya === "DP") {
             for (const item of items) {
                 await client.query(
                     `INSERT INTO detail_penjualan (id_penjualan, kode_barang, nama_barang, warna, ukuran, quantity, harga, diskon, tanggal, metode_pembayaran, pembayaran, total_harga) 
-                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_DATE, $9, $10, $11) RETURNING *`,
-                    [id, item.kode_barang, item.nama_barang, item.warna, item.ukuran, 0 ,
-                     item.harga, item.diskon, item.metode_pembayaran, 
+                     VALUES ($1, $2, $3, $4, $5, 0, $6, $7, CURRENT_DATE, $8, $9, $10)`,
+                    [newId, item.kode_barang, item.nama_barang, item.warna, item.ukuran, 
+                     item.harga, item.diskon, transaksi.metode_pembayaran, 
                      `Lunas DP ${id}`, item.total_harga]
                 );
             }
         }
 
         // ✅ Update status pembayaran di `penjualan`
-        await client.query(
-            "UPDATE penjualan SET pembayaran = $1 WHERE id = $2",
-            [`Lunas DP ${id}`, id]
-        );
+        // await client.query(
+        //     "UPDATE penjualan SET pembayaran = $1 WHERE id = $2",
+        //     [`Lunas DP ${id}`, id]
+        // );
 
         await client.query('COMMIT');
 

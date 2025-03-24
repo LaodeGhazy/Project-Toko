@@ -129,25 +129,25 @@ document.getElementById("kodeBarang").addEventListener("input", async function()
         return;
     }
 
-    try {
-        const response = await fetch(`/get-barang?kodeBarang=${kode}`);
-        const data = await response.json();
+    // try {
+    //     const response = await fetch(`/get-barang?kodeBarang=${kode}`);
+    //     const data = await response.json();
 
-        if (data && data.nama_barang) {
-            // Jika data ditemukan, isi Nama Barang & Harga lalu kunci field
-            document.getElementById("namaBarang").value = data.nama_barang;
-            document.getElementById("harga").value = data.harga ? data.harga.toLocaleString("id-ID") : "";
+    //     if (data && data.nama_barang) {
+    //         // Jika data ditemukan, isi Nama Barang & Harga lalu kunci field
+    //         document.getElementById("namaBarang").value = data.nama_barang;
+    //         document.getElementById("harga").value = data.harga ? data.harga.toLocaleString("id-ID") : "";
 
-            document.getElementById("namaBarang").setAttribute("readonly", true);
-            document.getElementById("harga").setAttribute("readonly", true);
-        } else {
-            // Jika data tidak ditemukan, reset field dan buka kembali input
-            resetFields();
-        }
-    } catch (error) {
-        console.error("Gagal mengambil data barang:", error);
-        resetFields(); // Pastikan field di-reset jika ada error
-    }
+    //         document.getElementById("namaBarang").setAttribute("readonly", true);
+    //         document.getElementById("harga").setAttribute("readonly", true);
+    //     } else {
+    //         // Jika data tidak ditemukan, reset field dan buka kembali input
+    //         resetFields();
+    //     }
+    // } catch (error) {
+    //     console.error("Gagal mengambil data barang:", error);
+    //     resetFields(); // Pastikan field di-reset jika ada error
+    // }
 });
 
 // Fungsi untuk mereset Nama Barang & Harga dan membuka input kembali
@@ -677,7 +677,7 @@ function formatTanggal(tanggal) {
 // }
 
 let currentPage = 1;
-const rowsPerPage = 5;
+const rowsPerPage = 30;
 let kasirData = [];
 
 async function loadKasirData() {
@@ -865,6 +865,7 @@ async function exportKasirToExcel() {
 
         return [
             new Date(item.tanggal).toLocaleDateString("id-ID"),
+            item.id_penjualan,
             item.kode_barang,
             item.nama_barang,
             item.warna,
@@ -925,7 +926,7 @@ async function exportKasirToExcel() {
             let blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
             let link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.download = "Riwayat_Penjualan.xlsx";
+            link.download = "Riwayat_Penjualan .xlsx";
             link.click();
         });
     }, 100); // Delay 100ms untuk memastikan perubahan diterapkan
@@ -941,7 +942,7 @@ let currentSummaryPage = 1;
 async function loadStockData() {
     const response = await fetch('/get-stock');
     stockData = await response.json();
-    updateStockTable();
+    updateStockTable(stockData);
 }
 
 function updateStockTable() {
