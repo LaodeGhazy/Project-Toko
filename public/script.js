@@ -675,7 +675,7 @@ function formatTanggal(tanggal) {
 //         alert("Terjadi kesalahan saat mengekspor data kasir. Silakan coba lagi.");
 //     }
 // }
-
+//ANJAY
 let currentPage = 1;
 const rowsPerPage = 30;
 let kasirData = [];
