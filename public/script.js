@@ -398,7 +398,7 @@ async function processLunas(id) {
             alert(result.message);
             console.log("📜 Sebelum generate nota:", result.items, result.transaksi);
             generateReceiptsPDF(result.items, result.transaksi); // 🔹 Cetak resi langsung
-            loadPendingData();
+            deletePending(id);
         } else {
             alert(result.error);
         }
@@ -538,7 +538,7 @@ function generateReceiptPDF(transaksi, isDP) {
     transaksi.cart.forEach(item => {
         let totalItem = item.hargaSatuan * item.quantity;
         let hargaSetelahDiskon = totalItem - (totalItem * (item.diskon / 100));
-        receiptContent += `\n${item.namaBarang} (${item.warna})\n${item.quantity} x Rp${item.hargaSatuan.toLocaleString()}  =  Rp${hargaSetelahDiskon.toLocaleString()}\n-------------------------------`;
+        receiptContent += `\n${item.namaBarang} (${item.warna})(${item.ukuran})\n${item.quantity} x Rp${item.hargaSatuan.toLocaleString()}  =  Rp${hargaSetelahDiskon.toLocaleString()}\n-------------------------------`;
     });
     
     if (isDP) {
@@ -577,14 +577,18 @@ function generateReceiptPDF(transaksi, isDP) {
     transaksi.cart.forEach(item => {
         let totalItem = item.hargaSatuan * item.quantity;
         let hargaSetelahDiskon = totalItem - (totalItem * (item.diskon / 100));
-        receiptContent += `${item.namaBarang} (${item.warna})\n${item.quantity} x Rp${item.hargaSatuan.toLocaleString()}  =  Rp${hargaSetelahDiskon.toLocaleString()}\n-------------------------------\n`;
+        receiptContent += `${item.namaBarang} (${item.warna})\n${item.quantity} x Rp${item.hargaSatuan.toLocaleString()}  =  Rp${totalItem.toLocaleString()}\n`;
+        receiptContent += `Diskon : ${item.diskon}%\n`
+        receiptContent += `Harga setelah Diskon: ${hargaSetelahDiskon.toLocaleString()}\n-------------------------------\n`
     });
-
+    
     if (isDP) {
-        receiptContent += `\nHarga Total: Rp${transaksi.dpAmount.toLocaleString()} (DP)\n`;
+        let totalHarga = transaksi.cart.reduce((acc, item) => acc + ((item.hargaSatuan * item.quantity) - ((item.hargaSatuan * item.quantity) * (item.diskon / 100))), 0);
+        receiptContent += `\nHarga Total: Rp${totalHarga.toLocaleString()}\n-------------------------------\nTerima kasih telah berbelanja!\n`;
+        receiptContent += `\n Total Bayar: Rp${transaksi.dpAmount.toLocaleString()} (DP)\n`;
     } else {
         let totalHarga = transaksi.cart.reduce((acc, item) => acc + ((item.hargaSatuan * item.quantity) - ((item.hargaSatuan * item.quantity) * (item.diskon / 100))), 0);
-        receiptContent += `\nTotal Bayar: Rp${totalHarga.toLocaleString()}\n-------------------------------\nTerima kasih telah berbelanja!`;
+        receiptContent += `\nHarga Total: Rp${totalHarga.toLocaleString()}\n-------------------------------\nTerima kasih telah berbelanja!`;
     }
 
     pdf.setFontSize(12);
@@ -611,10 +615,16 @@ function generateReceiptsPDF(transaksi, infoTransaksi) {
     transaksi.forEach(item => {
         let totalItem = parseFloat(item.harga) * item.quantity;
         let hargaSetelahDiskon = totalItem - (totalItem * (item.diskon / 100));
-        totalHargaAsli += totalItem;
+        totalHargaAsli += hargaSetelahDiskon;
 
-        receiptContent += `${item.nama_barang} (${item.warna})\n`;
-        receiptContent += `${item.quantity} x Rp${parseFloat(item.harga).toLocaleString()} = Rp${hargaSetelahDiskon.toLocaleString()}\n-------------------------------\n`;
+        // receiptContent += `${item.nama_barang} (${item.warna})\n`;
+        // receiptContent += `${item.quantity} x Rp${parseFloat(item.harga).toLocaleString()} = Rp${totalItem.toLocaleString()}\n`;
+        // receiptContent += `${item.namaBarang} (${item.warna})\n${item.quantity} x Rp${item.hargaSatuan.toLocaleString()}  =  Rp${totalItem.toLocaleString()}\n`;
+        // receiptContent += `Diskon : ${item.diskon}%\n`
+        // receiptContent += `Harga setelah Diskon: ${hargaSetelahDiskon.toLocaleString()}\n-------------------------------\n`
+        receiptContent += `${item.namaBarang} (${item.warna}) (${item.ukuran})\n${item.quantity} x Rp${item.harga.toLocaleString()}  =  Rp${totalItem.toLocaleString()}\n`;
+        receiptContent += `Diskon : ${item.diskon}%\n`
+        receiptContent += `Harga setelah Diskon: ${hargaSetelahDiskon.toLocaleString()}\n-------------------------------\n`
     });
 
     if (infoTransaksi.pembayaran.startsWith("Lunas DP")) {
