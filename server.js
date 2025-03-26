@@ -22,6 +22,34 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'Kantor.html'));
 });
 
+app.post('/delete-penjualan', async (req, res) => {
+    const { id_penjualan } = req.body;
+
+    if (!id_penjualan) {
+        return res.status(400).json({ message: "ID penjualan tidak valid!" });
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        // 🔹 Hapus detail_penjualan terlebih dahulu
+        await client.query('DELETE FROM detail_penjualan WHERE id_penjualan = $1', [id_penjualan]);
+
+        // 🔹 Hapus penjualan utama
+        await client.query('DELETE FROM penjualan WHERE id = $1', [id_penjualan]);
+
+        await client.query('COMMIT');
+        res.json({ message: "Riwayat penjualan berhasil dihapus!" });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error("Database error:", err);
+        res.status(500).json({ message: "Gagal menghapus riwayat penjualan!" });
+    } finally {
+        client.release();
+    }
+});
+
 app.post('/update-stock', async (req, res) => {
     const { kodeBarang, namaBarang, warna, quantity, ukuran, harga } = req.body;
 

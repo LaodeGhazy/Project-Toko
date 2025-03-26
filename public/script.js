@@ -690,13 +690,48 @@ let currentPage = 1;
 const rowsPerPage = 30;
 let kasirData = [];
 
-async function loadKasirData() {
-    const response = await fetch('/get-kasir');
-    kasirData = await response.json(); // Simpan semua data dalam array
+function loadKasirData() {
+    fetch('/get-kasir')
+        .then(response => response.json())
+        .then(data => {
+            const tableBody = document.getElementById("kasirTableBody");
+            tableBody.innerHTML = ""; // Kosongkan tabel sebelum diisi ulang
+            
 
-    console.log(kasirData);
-    updateTable();
+            data.forEach(item => {
+                let formattedDate = new Date(item.tanggal).toLocaleDateString('id-ID', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+                const row = document.createElement("tr");
+
+                row.innerHTML = `
+                    <td>${formattedDate}</td>
+                    <td>${item.kode_barang}</td>
+                    <td>${item.nama_barang}</td>
+                    <td>${item.warna}</td>
+                    <td>${item.quantity}</td>
+                    <td>Rp ${item.total_harga}</td>
+                    <td>${item.pembayaran}</td>
+                    <td>Rp ${item.total_pembayaran}</td>
+                    <td>${item.metode_pembayaran}</td>
+                    <td>
+                        <button class="delete-btnhp" onclick="deletePenjualan('${item.id_penjualan}')">
+                            Hapus
+                        </button>
+                    </td>
+                `;
+
+                tableBody.appendChild(row);
+            });
+        })
+        .catch(error => console.error("Error memuat data penjualan:", error));
 }
+
+// Panggil fungsi untuk menampilkan data saat halaman dimuat
+document.addEventListener("DOMContentLoaded", loadKasirData);
+
 
 function updateTable() {
     const tableBody = document.querySelector("#kasirTable tbody");
@@ -1144,6 +1179,24 @@ async function loadHistoryStockData() {
     historyData = await response.json();
     updateHistoryTable();
 }
+
+function deletePenjualan(id_penjualan) {
+    if (!confirm("Apakah Anda yakin ingin menghapus riwayat penjualan ini?")) return;
+
+    fetch('/delete-penjualan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id_penjualan })
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.message);
+        loadKasirData(); // Reload tabel setelah penghapusan
+    })
+    .catch(error => console.error("Error menghapus data:", error));
+}
+
+
 
 function updateHistoryTable() {
     let tableBody = document.querySelector("#historyStockTable tbody");

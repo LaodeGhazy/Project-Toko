@@ -593,3 +593,17 @@ button:hover {
     background: #f04444;
     transform: scale(1.05); /* Warna hover yang sesuai */
 }
+
+.delete-btnhp {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.delete-btnhp:hover {
+    background: #c0392b;
+}
