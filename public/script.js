@@ -133,17 +133,11 @@ document.getElementById("kodeBarang").addEventListener("input", async function()
         const response = await fetch(`/get-barang?kodeBarang=${kode}`);
         const data = await response.json();
 
-        if (data && data.nama_barang) {
+        if (data && data.nama_barang ) {
             // Jika data ditemukan, isi Nama Barang & Harga lalu kunci field
             document.getElementById("namaBarang").value = data.nama_barang;
-            document.getElementById("ukuran").value = data.ukuran;
-            document.getElementById("warna").value = data.warna;
-            document.getElementById("harga").value = data.harga ? data.harga.toLocaleString("id-ID") : "";
 
             document.getElementById("namaBarang").setAttribute("readonly", true);
-            document.getElementById("ukuran").setAttribute("readonly", true);
-            document.getElementById("warna").setAttribute("readonly", true);
-            document.getElementById("harga").setAttribute("readonly", true);
 
             console.log(response, data);
         } else {
@@ -159,13 +153,7 @@ document.getElementById("kodeBarang").addEventListener("input", async function()
 // Fungsi untuk mereset Nama Barang & Harga dan membuka input kembali
 function resetFields() {
     document.getElementById("namaBarang").value = "";
-    document.getElementById("ukuran").value = "";
-    document.getElementById("harga").value = "";
-    document.getElementById("warna").value = "";
     document.getElementById("namaBarang").removeAttribute("readonly");
-    document.getElementById("ukuran").removeAttribute("readonly");
-    document.getElementById("harga").removeAttribute("readonly");
-    document.getElementById("warna").removeAttribute("readonly");
 }
 
 document.getElementById("diskonToko").addEventListener("input", function () {

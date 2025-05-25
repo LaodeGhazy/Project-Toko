@@ -55,16 +55,16 @@ app.post('/update-stock', async (req, res) => {
 
     try {
         const check = await pool.query(
-            'SELECT * FROM stock WHERE LOWER(kode_barang) = LOWER($1)',
-            [kodeBarang]
+            'SELECT * FROM stock WHERE LOWER(kode_barang) = LOWER($1) AND LOWER(warna) = LOWER($2) AND ukuran = $3',
+            [kodeBarang, warna, ukuran]
         );        
         
 
         if (check.rows.length > 0) {
             // Jika warna dan ukuran sudah ada, update quantity di stock
             await pool.query(
-                'UPDATE stock SET quantity = quantity + $1, tanggal = CURRENT_DATE WHERE LOWER(kode_barang) = LOWER($2) ',
-                [quantity, kodeBarang ]
+                'UPDATE stock SET quantity = quantity + $1, tanggal = CURRENT_DATE WHERE LOWER(kode_barang) = LOWER($2) AND LOWER(warna) = LOWER($3) AND ukuran = $4',
+                [quantity, kodeBarang, warna, ukuran ]
             );            
             
             
@@ -130,8 +130,8 @@ app.post("/deleteStock", async (req, res) => {
 
         // Hapus data dari history_stock berdasarkan id_history
         const deleteResult = await pool.query(
-            "DELETE FROM history_stock WHERE id_history = $1 AND LOWER(kode_barang) = LOWER($2) RETURNING *", 
-            [id_history, kodeBarang]
+            "DELETE FROM history_stock WHERE id_history = $1 AND LOWER(kode_barang) = LOWER($2) AND LOWER(warna) = LOWER($3) AND ukuran = $4 RETURNING *", 
+            [id_history, kodeBarang, warna, ukuran]
         );
         
 
@@ -141,8 +141,8 @@ app.post("/deleteStock", async (req, res) => {
 
         // Kurangi quantity di tabel stock sesuai dengan quantity dari history_stock
         updateStock = await pool.query(
-            "UPDATE stock SET quantity = quantity - $1 WHERE LOWER(kode_barang) = LOWER($2)RETURNING quantity", 
-            [quantityToDeduct, kodeBarang]
+            "UPDATE stock SET quantity = quantity - $1 WHERE LOWER(kode_barang) = LOWER($2) AND LOWER(warna) = LOWER($3) AND ukuran = $4 RETURNING quantity", 
+            [quantityToDeduct, kodeBarang, warna, ukuran]
         );
         await pool.query(
             "DELETE FROM stock WHERE quantity = 0"
@@ -150,8 +150,8 @@ app.post("/deleteStock", async (req, res) => {
         console.log(updateStock);
         if (updateStock.rows.length > 0 && updateStock.rows[0].quantity <= 0) {
             await pool.query(
-                "DELETE FROM stock WHERE LOWER(kode_barang) = LOWER($1)",
-                [kodeBarang]
+                "DELETE FROM stock WHERE LOWER(kode_barang) = LOWER($1) AND LOWER(warna) = LOWER($2) AND ukuran = $3",
+                [kodeBarang,warna,ukuran]
             );
         }
 
@@ -235,11 +235,11 @@ app.get('/get-warna', async (req, res) => {
 });
 
 app.post('/add-to-cart', async (req, res) => {
-    const { kodeBarang, warna, quantity } = req.body;
+    const { kodeBarang, warna, quantity, ukuran } = req.body;
     try {
         const result = await pool.query(
-            'SELECT nama_barang, harga, ukuran FROM stock WHERE LOWER(kode_barang) = LOWER($1)',
-            [kodeBarang]
+            'SELECT nama_barang, harga, ukuran FROM stock WHERE LOWER(kode_barang) = LOWER($1) AND LOWER(warna) = LOWER($2) AND ukuran = $3',
+            [kodeBarang, warna, ukuran]
         );        
 
         if (result.rows.length === 0) {
@@ -292,8 +292,8 @@ app.post('/checkout', async (req, res) => {
                  hargaSetelahDiskon, item.diskon, metodePembayaran, pembayaran, totalHarga] // 🔹 Ukuran tetap tersimpan & total harga benar
             );
             updateStock = await pool.query(
-                "UPDATE stock SET quantity = quantity - $1 WHERE LOWER(kode_barang) = LOWER($2) RETURNING quantity", 
-                [item.quantity, item.kodeBarang]
+                "UPDATE stock SET quantity = quantity - $1 WHERE LOWER(kode_barang) = LOWER($2) AND LOWER(warna) = LOWER($3) AND ukuran = $4 RETURNING quantity", 
+                [item.quantity, item.kodeBarang, item.warna, item.ukuran]
             );        
             console.log(updateStock);
             await pool.query(
