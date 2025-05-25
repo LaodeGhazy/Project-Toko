@@ -129,33 +129,43 @@ document.getElementById("kodeBarang").addEventListener("input", async function()
         return;
     }
 
-    // try {
-    //     const response = await fetch(`/get-barang?kodeBarang=${kode}`);
-    //     const data = await response.json();
+    try {
+        const response = await fetch(`/get-barang?kodeBarang=${kode}`);
+        const data = await response.json();
 
-    //     if (data && data.nama_barang) {
-    //         // Jika data ditemukan, isi Nama Barang & Harga lalu kunci field
-    //         document.getElementById("namaBarang").value = data.nama_barang;
-    //         document.getElementById("harga").value = data.harga ? data.harga.toLocaleString("id-ID") : "";
+        if (data && data.nama_barang) {
+            // Jika data ditemukan, isi Nama Barang & Harga lalu kunci field
+            document.getElementById("namaBarang").value = data.nama_barang;
+            document.getElementById("ukuran").value = data.ukuran;
+            document.getElementById("warna").value = data.warna;
+            document.getElementById("harga").value = data.harga ? data.harga.toLocaleString("id-ID") : "";
 
-    //         document.getElementById("namaBarang").setAttribute("readonly", true);
-    //         document.getElementById("harga").setAttribute("readonly", true);
-    //     } else {
-    //         // Jika data tidak ditemukan, reset field dan buka kembali input
-    //         resetFields();
-    //     }
-    // } catch (error) {
-    //     console.error("Gagal mengambil data barang:", error);
-    //     resetFields(); // Pastikan field di-reset jika ada error
-    // }
+            document.getElementById("namaBarang").setAttribute("readonly", true);
+            document.getElementById("ukuran").setAttribute("readonly", true);
+            document.getElementById("warna").setAttribute("readonly", true);
+            document.getElementById("harga").setAttribute("readonly", true);
+
+            console.log(response, data);
+        } else {
+            // Jika data tidak ditemukan, reset field dan buka kembali input
+            resetFields();
+        }
+    } catch (error) {
+        console.error("Gagal mengambil data barang:", error);
+        resetFields(); // Pastikan field di-reset jika ada error
+    }
 });
 
 // Fungsi untuk mereset Nama Barang & Harga dan membuka input kembali
 function resetFields() {
     document.getElementById("namaBarang").value = "";
+    document.getElementById("ukuran").value = "";
     document.getElementById("harga").value = "";
+    document.getElementById("warna").value = "";
     document.getElementById("namaBarang").removeAttribute("readonly");
+    document.getElementById("ukuran").removeAttribute("readonly");
     document.getElementById("harga").removeAttribute("readonly");
+    document.getElementById("warna").removeAttribute("readonly");
 }
 
 document.getElementById("diskonToko").addEventListener("input", function () {
@@ -204,36 +214,52 @@ function updateTotalPrice(total) {
     totalPriceElement.innerText = `Rp ${total.toLocaleString("id-ID")}`;
 }
 
+
 async function addToCart() {
-    const kode = document.getElementById("kodeInput").value;
+    const kode = document.getElementById("kodeInput").value.trim();
     const warna = document.getElementById("warnaDropdown").value;
     const ukuran = document.getElementById("ukuranDropdown").value;
     const quantity = parseInt(document.getElementById("checkoutQuantity").value);
-    
     const diskonElement = document.getElementById("diskonToko");
-    let diskonInput = diskonElement ? diskonElement.value.replace("%", "").trim() : "0"; 
-    let diskon = parseInt(diskonInput) || 0; // 🔹 Konversi ke angka, default ke 0 jika tidak ada input
+    let diskonInput = diskonElement.value.replace("%", "").trim();
+    let diskon = parseInt(diskonInput) || 0;
 
     if (!kode || !warna || !ukuran || isNaN(quantity) || quantity <= 0) {
-        alert("Mohon lengkapi semua data dengan benar.");
+        alert("Mohon lengkapi semua data dan isi Quantity lebih dari 0.");
         return;
     }
 
-    if (diskon > 99) {
-        alert("Diskon tidak boleh lebih dari 99%!");
-        return;
-    }
-
+    // Validasi stok
     try {
-        const response = await fetch('/add-to-cart', {
+        const response = await fetch(`/get-stock`);
+        const stokData = await response.json();
+
+        const stokItem = stokData.find(item =>
+            item.kode_barang.toLowerCase() === kode.toLowerCase() &&
+            item.warna.toLowerCase() === warna.toLowerCase() &&
+            item.ukuran === ukuran
+        );
+
+        if (!stokItem) {
+            alert("Barang tidak ditemukan di stok!");
+            return;
+        }
+
+        if (quantity > stokItem.quantity) {
+            alert(`Stok tersedia hanya ${stokItem.quantity}. Tidak bisa input lebih.`);
+            return;
+        }
+
+        // Jika valid, lanjut ambil info harga
+        const detailResponse = await fetch('/add-to-cart', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ kodeBarang: kode, warna, ukuran, quantity })
         });
 
-        const result = await response.json();
+        const result = await detailResponse.json();
 
-        if (response.ok) {
+        if (detailResponse.ok) {
             let hargaSatuan = result.harga || 0;
             let totalHarga = hargaSatuan * quantity;
             let totalSetelahDiskon = totalHarga - (totalHarga * (diskon / 100));
@@ -245,7 +271,7 @@ async function addToCart() {
                 ukuran,
                 quantity,
                 hargaSatuan,
-                diskon: diskon + "%", // 🔹 Simpan diskon dalam format persen
+                diskon: diskon + "%",
                 totalHargaSebelumDiskon: totalHarga,
                 totalHarga: totalSetelahDiskon
             });
@@ -259,6 +285,7 @@ async function addToCart() {
         console.error("Gagal menambahkan ke keranjang:", error);
     }
 }
+
 
 
 function updateReceipt() {
@@ -396,7 +423,7 @@ async function processLunas(id) {
             }
 
             alert(result.message);
-            console.log("📜 Sebelum generate nota:", result.items, result.transaksi);
+            // console.log("📜 Sebelum generate nota:", result.items, result.transaksi);
             generateReceiptsPDF(result.items, result.transaksi); // 🔹 Cetak resi langsung
             deletePending(id);
         } else {
@@ -597,7 +624,7 @@ function generateReceiptPDF(transaksi, isDP) {
 }
 
 function generateReceiptsPDF(transaksi, infoTransaksi) {
-    const { jsPDF } = window.jspdf; // Ambil jsPDF dari window.jspdf
+    const { jsPDF } = window.jspdf; // Amb// ✅ Tambahkan Judul
     let pdf = new jsPDF();
     const today = new Date(); 
 
@@ -607,29 +634,29 @@ function generateReceiptsPDF(transaksi, infoTransaksi) {
     receiptContent += `Metode Pembayaran: ${infoTransaksi.metode_pembayaran}\n`;
     receiptContent += `Status Pembayaran: ${infoTransaksi.pembayaran}\n-------------------------------\n`;
 
-    console.log("Transaksi Data:", transaksi, infoTransaksi);
+    console.log("Transaksi Data:", transaksi);
+    console.log("infoTransaksi: ", infoTransaksi);
 
-    let totalHargaAsli = 0;
+    // let totalHargaAsli = 0;
     let totalPembayaran = parseFloat(infoTransaksi.total_pembayaran);
+    let totalHarga = parseFloat(infoTransaksi.total_harga);
 
     transaksi.forEach(item => {
         let totalItem = parseFloat(item.harga) * item.quantity;
-        let hargaSetelahDiskon = totalItem - (totalItem * (item.diskon / 100));
-        totalHargaAsli += hargaSetelahDiskon;
+        // let hargaSetelahDiskon = totalItem - (totalItem * (item.diskon / 100));
+        // totalHargaAsli += hargaSetelahDiskon;
 
         // receiptContent += `${item.nama_barang} (${item.warna})\n`;
         // receiptContent += `${item.quantity} x Rp${parseFloat(item.harga).toLocaleString()} = Rp${totalItem.toLocaleString()}\n`;
         // receiptContent += `${item.namaBarang} (${item.warna})\n${item.quantity} x Rp${item.hargaSatuan.toLocaleString()}  =  Rp${totalItem.toLocaleString()}\n`;
         // receiptContent += `Diskon : ${item.diskon}%\n`
         // receiptContent += `Harga setelah Diskon: ${hargaSetelahDiskon.toLocaleString()}\n-------------------------------\n`
-        receiptContent += `${item.namaBarang} (${item.warna}) (${item.ukuran})\n${item.quantity} x Rp${item.harga.toLocaleString()}  =  Rp${totalItem.toLocaleString()}\n`;
-        receiptContent += `Diskon : ${item.diskon}%\n`
-        receiptContent += `Harga setelah Diskon: ${hargaSetelahDiskon.toLocaleString()}\n-------------------------------\n`
+        receiptContent += `${item.quantity} ${item.nama_barang} (${item.warna}) (${item.ukuran})\n`;
     });
 
     if (infoTransaksi.pembayaran.startsWith("Lunas DP")) {
-        let bayarLunas = totalHargaAsli - totalPembayaran;
-        receiptContent += `\nHarga Total: Rp${totalHargaAsli.toLocaleString('id-ID')}\n`;
+        let bayarLunas = totalHarga - totalPembayaran;
+        receiptContent += `\n-------------------------------\nHarga Total: Rp${totalHarga.toLocaleString('id-ID')}\n`;
         receiptContent += `DP: Rp${totalPembayaran.toLocaleString('id-ID')}\n`;
         receiptContent += `Sisa Bayar: Rp${bayarLunas.toLocaleString('id-ID')}\n-------------------------------\n`;
     } else {
